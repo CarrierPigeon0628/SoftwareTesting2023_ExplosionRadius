@@ -12,7 +12,9 @@ import re
 import brief
 import gat
 import gcn
-
+from yinguo import *
+from docx import Document
+from wordparse import *
 # <editor-fold desc="Img & Data">
 gat_image = Image.open('./gat/img/GAT.png')  # GAT结构图
 mtad_gat_image = Image.open('./gat/img/MTAD-GAT.png')  # MTAD-GAT结构图
@@ -29,7 +31,7 @@ Anomaly_df = pd.read_csv('./gat/data/Anomaly.csv')
 st.sidebar.title('爆炸半径建模')
 option = st.sidebar.selectbox(
     'Select Function Items To Test',
-    ["Brief", "MTAD-GAT", 'Based on GCN', "Summary"])
+    ["Brief", "MTAD-GAT", 'Based on GCN', "Summary", "rule_based", "word_parse", "entityExtract"])
 
 st.title(option)  # 设置页面主标题
 
@@ -93,6 +95,55 @@ elif option == "Based on GCN":
     pass
 elif option == "Summary":
     pass
+
+elif option == "rule_based":
+    text_input = st.text_input("请输入文本：")
+    result = test(text_input)
+
+    if result is None:
+        st.write("无效输入")
+    else:
+        cause, tag, effect = result
+        st.write("原因：", cause)
+        st.write("标签：", tag)
+        st.write("影响：", effect)
+
+elif option == "word_parse":
+    st.title("上传并解析 docx 文件")
+    uploaded_file = st.file_uploader("上传文件", type="docx")
+    if uploaded_file is not None:
+        # 提取文档中的正文
+        content = extract_text_from_docx(uploaded_file)
+        # 显示正文
+        st.markdown(content)
+elif option == "entityExtract":
+    st.title("文件上传和显示")
+
+    # 创建一个文件上传组件
+    file = st.file_uploader("请选择要上传的文件")
+
+    if file is not None:
+        # 读取上传文件的内容
+        content = file.read().decode("utf-8")
+
+        # 获取上传文件的文件名
+        file_name = file.name
+
+        # 生成结果文件名
+        result_file_name = file_name.split('.')[0] + "-result.txt"
+
+        # 判断结果文件是否存在
+        import streamlit as st
+
+        if os.path.exists(result_file_name):
+            # 读取结果文件的内容
+            with open(result_file_name, "r", encoding="utf-8") as f:
+                result_content = f.read()
+            content1 = str(result_content)
+            # 在界面上显示结果文件的内容
+            st.markdown(content1)
+        else:
+            st.error(f"未找到结果文件：{result_file_name}")
 
 # if option == "Types of Triangles":
 #     st.sidebar.markdown(triangle.description)
