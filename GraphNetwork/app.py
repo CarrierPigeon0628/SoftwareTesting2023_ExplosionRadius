@@ -123,7 +123,7 @@ elif option == "MTAD-GAT":
         if st.button("Diagnose ᕙ(• ॒ ູ•)ᕘ"):
             print('hello world')
     elif option2 == '后续工作(Future Work)':
-        st.sidebar.image(gat_image, use_column_width=True)
+        st.image(mtad_gat_image, use_column_width=True)
         st.markdown('### 1. 对预测网络进行调整，使用其他例如LSTM、Transformer等模型进行预测(Forcasting)')
         st.markdown('### 2. 优化阈值的选择方法，使用遗传算法、蚁群算法等智能群体算法进行估计')
     # </editor-fold>
