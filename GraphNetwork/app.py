@@ -27,6 +27,9 @@ mtad_gat_image = Image.open('./gat/img/MTAD-GAT.png')  # MTAD-GAT结构图
 regularization_image = Image.open('./gat/img/regularization.PNG')
 
 gcn_image = Image.open('./gcn/img/GCN.png')  # GCN结构图
+gsl_image = Image.open('./brief/img/gsl.png')  # GSL结构图
+
+bert_image = Image.open('./brief/img/bert.png')
 
 machine_1_1_df = pd.read_csv('./gat/data/machine-1-1.csv')
 machine_1_1_label_df = pd.read_csv('./gat/data/machine-1-1-label.csv')
@@ -68,12 +71,22 @@ if option == "简介(Brief)":
     st.markdown('GCN的核心思想是将图的节点和边作为输入，通过学习节点之间的关系来进行节点的表示学习和特征提取。'
                 '与传统的卷积神经网络不同，GCN利用邻居节点的信息来更新每个节点的特征表示。')
     st.image(gcn_image, use_column_width=True)
+    st.subheader('GSL —— 图结构学习')
+    st.markdown('图结构学习（Graph Structure Learning，GSL）从一个原始的图结构开始，通过一个结构建模模块对图的结构进行细化/优化。'
+                'GCN模块和结构建模模块中的参数交替（或联合）更新，直到满足预设的停止条件。')
+    st.markdown('在本项目中，我们使用直接学习法的GSL，和GCN联合优化参数，以解决GCN需要预设和固定邻接矩阵的问题。'
+                '这样，我们的GCN即可实现类似GAT动态优化图结构参数。')
+    st.image(gsl_image, use_column_width=True)
     st.subheader('GAT —— 图注意力网络')
     st.markdown('图注意力网络（Graph Attention Network，GAT）是一种基于注意力机制的图卷积神经网络（GCN）扩展模型。'
                 '它在处理图结构数据时能够自适应地学习节点之间的关系权重，从而更好地捕捉节点之间的重要性和相关性。')
     st.markdown('与传统的GCN使用固定的权重矩阵进行邻居节点特征的聚合不同，GAT引入了注意力机制来计算每个节点与其邻居节点之间的重要性权重。'
                 '这样，每个节点可以自适应地调整邻居节点对其特征表示的贡献程度。')
     st.image(gat_image, use_column_width=True)
+    st.subheader('基于BERT-BiLSTM-CRF模型进行实体关系提取')
+    st.markdown('我们首先尝试Pipeline方法，先抽取实体再提取关系，发现会出现误差积累和交互缺失，于是我们选择使用LSTM-CRF，在这个结构上添加了BERT，并把LSTM层变为双向LSTM层'
+                '这个模型的优势在于结合了BERT的语义理解能力、BiLSTM对上下文信息的提取和序列建模的能力、和CRF较强的序列标注能力。')
+    st.image(bert_image, use_column_width=True)
     # </editor-fold>
 elif option == "MTAD-GAT":
     # <editor-fold desc="导航栏内容">
@@ -175,7 +188,7 @@ elif option == "T-GCN+GSL":
         pass
     # </editor-fold>
 elif option == "因果关系提取（rule_based）":
-    st.title("输入文本进行因果关系提取")
+    st.subheader("输入文本进行因果关系提取")
     text_input = st.text_input("请输入文本：")
     result = test(text_input)
     if result is None:
@@ -186,7 +199,7 @@ elif option == "因果关系提取（rule_based）":
         st.write("标签：", tag)
         st.write("影响：", effect)
 elif option == "word文档解析（word_parse）":
-    st.title("上传并解析 docx 文件")
+    st.subheader("上传并解析 docx 文件")
     uploaded_file = st.file_uploader("上传文件", type="docx")
     if uploaded_file is not None:
         # 提取文档中的正文
@@ -194,7 +207,7 @@ elif option == "word文档解析（word_parse）":
         # 显示正文
         st.markdown(content)
 elif option == "关系提取（entityExtract）":
-    st.title("上传文档进行关系提取")
+    st.subheader("基于BERT-BiLSTM-CRF模型进行实体关系提取")
 
     # 创建一个文件上传组件
     file = st.file_uploader("请选择要上传的文件")
