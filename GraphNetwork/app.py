@@ -27,7 +27,12 @@ mtad_gat_image = Image.open('./gat/img/MTAD-GAT.png')  # MTAD-GAT结构图
 regularization_image = Image.open('./gat/img/regularization.PNG')
 
 gcn_image = Image.open('./gcn/img/GCN.png')  # GCN结构图
+gru_image = Image.open('./gcn/img/gru.png')
 gsl_image = Image.open('./brief/img/gsl.png')  # GSL结构图
+gsl_algorithm = Image.open('./gcn/img/gsl.png')
+elementwise_range_confine = Image.open('./gcn/img/element-wise.png')
+tgcn_image = Image.open('./gcn/img/tgcn.png')
+
 
 bert_image = Image.open('./brief/img/bert.png')
 
@@ -42,8 +47,8 @@ Anomaly_df = pd.read_csv('./gat/data/Anomaly.csv')
 st.sidebar.title('爆炸半径建模')
 option = st.sidebar.selectbox(
     'Select Function Items To Test',
-    ["简介(Brief)", "MTAD-GAT", 'T-GCN+GSL', "总结(Summary)", "因果关系提取（rule_based）", "word文档解析（word_parse）",
-     "关系提取（entityExtract）"])
+    ["简介(Brief)", "MTAD-GAT", 'T-GCN+GSL', "因果关系提取（rule_based）", "word文档解析（word_parse）",
+     "关系提取（entityExtract）", "总结(Summary)"])
 
 st.title(option)  # 设置页面主标题
 
@@ -139,6 +144,7 @@ elif option == "MTAD-GAT":
             if fig is None:
                 st.markdown("测试集容量过小，无法匹配模型！禁止测试！！！")
             else:
+                time.sleep(4)
                 st.pyplot(fig)
                 normal = np.vstack((normal_label, normal_output)).T
                 abnormal = np.vstack((abnormal_label, abnormal_output)).T
@@ -147,7 +153,7 @@ elif option == "MTAD-GAT":
                 st.line_chart(normal)
                 st.line_chart(abnormal)
         if st.button("Performance Test (๑•̀ㅂ•́)و✧"):
-            fig = draw.performance_test()
+            fig = draw.performance_test(1)
             st.pyplot(fig)
     elif option2 == '后续工作(Future Work)':
         st.image(mtad_gat_image, use_column_width=True)
@@ -166,7 +172,21 @@ elif option == "T-GCN+GSL":
     # <editor-fold desc="主页内容">
     st.header(option2)  # 设置页面副标题
     if option2 == '原理(Principle)':
-        pass
+        st.image(tgcn_image, use_column_width=True)
+        st.markdown('一般的GCN网络能够对图数据进行特征提取，而图结构的本质表现为各节点之间的空间关联，一般使用邻接矩阵来表示这种空间关联。'
+                    'GCN所使用的邻接矩阵并不要求其元素值为离散的0或1，也可以为概率值，表示两结点之间相互连通的概率；亦可理解为建立一个满图，用该概率值表示边权。')
+        st.markdown('T-GCN的优势在于，引入RNN结构，将GCN集成至GRU单元中，利用GRU单元提取输入的时序特征，建模时间关联。')
+        st.markdown('GRU与LSTM类似，其结构比LSTM更简单。'
+                    'LSTM使用了输入门、遗忘门和输出门；而GRU仅仅使用重置门与更新门。这样的简化使得网络结构不会过于复杂，发生过拟合。'
+                    'GRU的更新公式如下所示：')
+        st.image(gru_image)
+        st.markdown('然而，GCN因其需要固定的邻接矩阵，在处理动态图结构或需要优化图结构的情况下难以被应用。'
+                    '为了解决这一问题，我们将图结构学习模块加入到模型结构中，联合优化邻接矩阵和T-GCN的权重参数。')
+        st.markdown('图结构学习模块使用直接学习的方法，输入为可优化参数的随机矩阵（元素值均为概率值），输出为邻接矩阵。')
+        st.image(gsl_algorithm, use_column_width=True)
+        st.markdown('我们通过如下非线性变换，将随机矩阵转化为邻接矩阵，并在损失函数中添加正则项，帮助收敛。')
+        st.image(elementwise_range_confine, use_column_width=True)
+        st.markdown('最终经训练与测试，T-GCN+GSL预测Kpi变化取得了93%的准确率，并且训练时间很短。')
     elif option2 == '性能测试(Performance Test)':
         uploaded_file = st.file_uploader("", type="csv")
         if st.button("Diagnose ᕙ(• ॒ ູ•)ᕘ"):
@@ -184,8 +204,10 @@ elif option == "T-GCN+GSL":
         if st.button("Performance Test (๑•̀ㅂ•́)و✧"):
             fig = draw.performance_test()
             st.pyplot(fig)
-    elif option2 == 'Future Work':
-        pass
+    elif option2 == '后续工作(Future Work)':
+        st.image(tgcn_image, use_column_width=True)
+        st.markdown('### 1. 将本模型与MTAD-GAT模型中基于预测模型与重建模型的联合优化模块相连接，测试最终结果；')
+        st.markdown('### 2. 经学长启发，尝试将对抗遮罩(Adversarial Masking)引入图结构优化。')
     # </editor-fold>
 elif option == "因果关系提取（rule_based）":
     st.subheader("输入文本进行因果关系提取")
