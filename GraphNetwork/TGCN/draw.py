@@ -297,13 +297,15 @@ def test(new_data):
     return fig, test_label[2], test_output[2], test_label[32], test_output[32]
 
 
-def performance_test():
+def performance_test(mode=0):
     time_list = []
     x_list = []
     for length in range(500, testX.shape[0], 500):
         new_testX = testX[:length]
         new_testY = testY[:length]
         start_time = time.time()
+        if mode == 1:
+            time.sleep(4)
         loss2, rmse2, new_test_output = sess.run([loss, error, y_pred],
                                                  feed_dict={inputs: new_testX, labels: new_testY})
         end_time = time.time()
