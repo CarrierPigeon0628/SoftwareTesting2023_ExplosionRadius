@@ -1,20 +1,11 @@
 import os
 
 from PIL import Image
-import matplotlib.pyplot as plt
-import streamlit as st
-import numpy as np
 import pandas as pd
-import datetime
-import time
-import re
 
-import brief
 import gat
-import gcn
-from yinguo import *
-from docx import Document
-from wordparse import *
+from GraphNetwork.yinguo import *
+from GraphNetwork.wordparse import *
 # <editor-fold desc="Img & Data">
 gat_image = Image.open('./gat/img/GAT.png')  # GAT结构图
 mtad_gat_image = Image.open('./gat/img/MTAD-GAT.png')  # MTAD-GAT结构图

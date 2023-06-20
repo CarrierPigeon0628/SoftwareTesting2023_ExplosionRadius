@@ -14,6 +14,10 @@ import brief
 import gat
 import gcn
 
+from yinguo import *
+from docx import Document
+from wordparse import *
+
 # <editor-fold desc="Img & Data">
 brief_image = Image.open('./brief/img/brief.PNG')
 lstm_image = Image.open('./brief/img/LSTM.png')
@@ -35,7 +39,8 @@ Anomaly_df = pd.read_csv('./gat/data/Anomaly.csv')
 st.sidebar.title('爆炸半径建模')
 option = st.sidebar.selectbox(
     'Select Function Items To Test',
-    ["简介(Brief)", "MTAD-GAT", 'T-GCN+GSL', "总结(Summary)"])
+    ["简介(Brief)", "MTAD-GAT", 'T-GCN+GSL', "总结(Summary)", "因果关系提取（rule_based）", "word文档解析（word_parse）",
+     "关系提取（entityExtract）"])
 
 st.title(option)  # 设置页面主标题
 
@@ -115,13 +120,22 @@ elif option == "MTAD-GAT":
             st.markdown('$precision$:{}'.format(match_num / len(machine_1_1_label_df['Label'])))
             # print(comparision)
     elif option2 == '性能测试(Performance Test)':
-        uploaded_file = st.file_uploader("", type="tfrecords")
-        # if uploaded_file is not None:
-        #     chart_data = pd.read_csv(uploaded_file)
-        # if st.checkbox('Show test samples'):
-        #     st.write(chart_data)
+        uploaded_file = st.file_uploader("", type="csv")
         if st.button("Diagnose ᕙ(• ॒ ູ•)ᕘ"):
-            print('hello world')
+            fig, normal_label, normal_output, abnormal_label, abnormal_output = draw.test(uploaded_file)
+            if fig is None:
+                st.markdown("测试集容量过小，无法匹配模型！禁止测试！！！")
+            else:
+                st.pyplot(fig)
+                normal = np.vstack((normal_label, normal_output)).T
+                abnormal = np.vstack((abnormal_label, abnormal_output)).T
+                normal = pd.DataFrame(normal)
+                abnormal = pd.DataFrame(abnormal)
+                st.line_chart(normal)
+                st.line_chart(abnormal)
+        if st.button("Performance Test (๑•̀ㅂ•́)و✧"):
+            fig = draw.performance_test()
+            st.pyplot(fig)
     elif option2 == '后续工作(Future Work)':
         st.image(mtad_gat_image, use_column_width=True)
         st.markdown('### 1. 对预测网络进行调整，使用其他例如LSTM、Transformer等模型进行预测(Forcasting)')
@@ -143,17 +157,70 @@ elif option == "T-GCN+GSL":
     elif option2 == '性能测试(Performance Test)':
         uploaded_file = st.file_uploader("", type="csv")
         if st.button("Diagnose ᕙ(• ॒ ູ•)ᕘ"):
-            fig, normal_label, normal_output, abnormal_label, abnormal_output = draw.test()
+            fig, normal_label, normal_output, abnormal_label, abnormal_output = draw.test(uploaded_file)
+            if fig is None:
+                st.markdown("测试集容量过小，无法匹配模型！禁止测试！！！")
+            else:
+                st.pyplot(fig)
+                normal = np.vstack((normal_label, normal_output)).T
+                abnormal = np.vstack((abnormal_label, abnormal_output)).T
+                normal = pd.DataFrame(normal)
+                abnormal = pd.DataFrame(abnormal)
+                st.line_chart(normal)
+                st.line_chart(abnormal)
+        if st.button("Performance Test (๑•̀ㅂ•́)و✧"):
+            fig = draw.performance_test()
             st.pyplot(fig)
-            normal = np.vstack((normal_label, normal_output)).T
-            abnormal = np.vstack((abnormal_label, abnormal_output)).T
-            normal = pd.DataFrame(normal)
-            abnormal = pd.DataFrame(abnormal)
-            st.line_chart(normal)
-            st.line_chart(abnormal)
     elif option2 == 'Future Work':
         pass
     # </editor-fold>
+elif option == "因果关系提取（rule_based）":
+    st.title("输入文本进行因果关系提取")
+    text_input = st.text_input("请输入文本：")
+    result = test(text_input)
+    if result is None:
+        st.write("无效输入")
+    else:
+        cause, tag, effect = result
+        st.write("原因：", cause)
+        st.write("标签：", tag)
+        st.write("影响：", effect)
+elif option == "word文档解析（word_parse）":
+    st.title("上传并解析 docx 文件")
+    uploaded_file = st.file_uploader("上传文件", type="docx")
+    if uploaded_file is not None:
+        # 提取文档中的正文
+        content = extract_text_from_docx(uploaded_file)
+        # 显示正文
+        st.markdown(content)
+elif option == "关系提取（entityExtract）":
+    st.title("上传文档进行关系提取")
+
+    # 创建一个文件上传组件
+    file = st.file_uploader("请选择要上传的文件")
+
+    if file is not None:
+        # 读取上传文件的内容
+        content = file.read().decode("utf-8")
+
+        # 获取上传文件的文件名
+        file_name = file.name
+
+        # 生成结果文件名
+        result_file_name = file_name.split('.')[0] + "-result.txt"
+
+        # 判断结果文件是否存在
+        import streamlit as st
+
+        if os.path.exists(result_file_name):
+            # 读取结果文件的内容
+            with open(result_file_name, "r", encoding="utf-8") as f:
+                result_content = f.read()
+            content1 = str(result_content)
+            # 在界面上显示结果文件的内容
+            st.markdown(content1)
+        else:
+            st.error(f"未找到结果文件：{result_file_name}")
 elif option == "总结(Summary)":
     st.markdown('## 我们的工作')
     st.markdown('### 1. 使用LSTM、GCN、GAT模型对爆炸半径求解问题建模，并建立了问题求解的全流程')

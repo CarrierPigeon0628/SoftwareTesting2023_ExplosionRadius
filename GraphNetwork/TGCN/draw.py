@@ -7,14 +7,14 @@ import numpy as np
 import math
 import os
 import numpy.linalg as la
-from TGCN.input_data_null_adj import preprocess_data, load_sz_data, load_los_data
+from TGCN.input_data_null_adj import preprocess_data,load_sz_data,load_los_data
 from TGCN.tgcn_null_adj import tgcnCell
-# from gru import GRUCell
+#from gru import GRUCell 
 
-from TGCN.visualization import plot_result, plot_error
-from sklearn.metrics import mean_squared_error, mean_absolute_error
+from TGCN.visualization import plot_result,plot_error
+from sklearn.metrics import mean_squared_error,mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
-# import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import time
 
 import matplotlib.pyplot as plt
@@ -35,7 +35,7 @@ flags.DEFINE_string('dataset', 'los', 'sz or los.')
 flags.DEFINE_string('model_name', 'tgcn', 'tgcn')
 model_name = FLAGS.model_name
 data_name = FLAGS.dataset
-train_rate = FLAGS.train_rate
+train_rate =  FLAGS.train_rate
 seq_len = FLAGS.seq_len
 output_dim = pre_len = FLAGS.pre_len
 batch_size = FLAGS.batch_size
@@ -51,19 +51,18 @@ if data_name == 'los':
 
 time_len = data.shape[0]
 num_nodes = data.shape[1]
-data1 = np.mat(data, dtype=np.float32)
+data1 =np.mat(data,dtype=np.float32)
 data1 = np.asarray(data1, dtype=np.float32)
 
 #### normalization
-# max_value = np.max(data1)
-# data1  = data1/max_value
+#max_value = np.max(data1)
+#data1  = data1/max_value
 scaler = MinMaxScaler(feature_range=(0, 1))
 data1 = scaler.fit_transform(data1)
 trainX, trainY, testX, testY = preprocess_data(data1, time_len, train_rate, seq_len, pre_len)
 
-totalbatch = int(trainX.shape[0] / batch_size)
+totalbatch = int(trainX.shape[0]/batch_size)
 training_data_count = len(trainX)
-
 
 def TGCN(_X, _weights, _biases):
     ###
@@ -73,17 +72,16 @@ def TGCN(_X, _weights, _biases):
     outputs, states = tf.compat.v1.nn.static_rnn(cell, _X, dtype=tf.float32)
     m = []
     for i in outputs:
-        o = tf.reshape(i, shape=[-1, num_nodes, gru_units])
-        o = tf.reshape(o, shape=[-1, gru_units])
+        o = tf.reshape(i,shape=[-1,num_nodes,gru_units])
+        o = tf.reshape(o,shape=[-1,gru_units])
         m.append(o)
     last_output = m[-1]
     output = tf.matmul(last_output, _weights['out']) + _biases['out']
-    output = tf.reshape(output, shape=[-1, num_nodes, pre_len])
-    output = tf.transpose(output, perm=[0, 2, 1])
-    output = tf.reshape(output, shape=[-1, num_nodes])
+    output = tf.reshape(output,shape=[-1,num_nodes,pre_len])
+    output = tf.transpose(output, perm=[0,2,1])
+    output = tf.reshape(output, shape=[-1,num_nodes])
     return output, m, states
-
-
+        
 ###### placeholders ######
 tf.compat.v1.disable_eager_execution()
 inputs = tf.compat.v1.placeholder(tf.float32, shape=[None, seq_len, num_nodes])
@@ -93,21 +91,22 @@ labels = tf.compat.v1.placeholder(tf.float32, shape=[None, pre_len, num_nodes])
 weights = {
     'out': tf.Variable(tf.compat.v1.random_normal([gru_units, pre_len], mean=1.0), name='weight_o')}
 biases = {
-    'out': tf.Variable(tf.compat.v1.random_normal([pre_len]), name='bias_o')}
+    'out': tf.Variable(tf.compat.v1.random_normal([pre_len]),name='bias_o')}
 
 if model_name == 'tgcn':
-    pred, ttts, ttto = TGCN(inputs, weights, biases)
+    pred,ttts,ttto = TGCN(inputs, weights, biases)
 
 y_pred = pred
+      
 
 ###### optimizer ######
 lambda_loss = 0.0015
 Lreg = lambda_loss * sum(tf.nn.l2_loss(tf_var) for tf_var in tf.compat.v1.trainable_variables())
-label = tf.reshape(labels, [-1, num_nodes])
+label = tf.reshape(labels, [-1,num_nodes])
 ##loss
-loss = tf.reduce_mean(tf.nn.l2_loss(y_pred - label) + Lreg)
+loss = tf.reduce_mean(tf.nn.l2_loss(y_pred-label) + Lreg)
 ##rmse
-error = tf.sqrt(tf.reduce_mean(tf.square(y_pred - label)))
+error = tf.sqrt(tf.reduce_mean(tf.square(y_pred-label)))
 optimizer = tf.compat.v1.train.AdamOptimizer(lr).minimize(loss)
 
 ###### Initialize session ######
@@ -115,35 +114,32 @@ checkpoint_path = './TGCN/TGCN_pre_0.932222381234169-126'
 saver = tf.compat.v1.train.import_meta_graph(checkpoint_path + '.meta')
 gpu_options = tf.compat.v1.GPUOptions(per_process_gpu_memory_fraction=0.333)
 sess = tf.compat.v1.Session(config=tf.compat.v1.ConfigProto(gpu_options=gpu_options))
-saver.restore(sess, checkpoint_path)
+saver.restore(sess,checkpoint_path)
 
-out = 'out/%s' % (model_name)
-# out = 'out/%s_%s'%(model_name,'perturbation')
-path1 = '%s_%s_lr%r_batch%r_unit%r_seq%r_pre%r_epoch%r' % (
-model_name, data_name, lr, batch_size, gru_units, seq_len, pre_len, training_epoch)
-path = os.path.join(out, path1)
-
-
-# if not os.path.exists(path):
+out = 'out/%s'%(model_name)
+#out = 'out/%s_%s'%(model_name,'perturbation')
+path1 = '%s_%s_lr%r_batch%r_unit%r_seq%r_pre%r_epoch%r'%(model_name,data_name,lr,batch_size,gru_units,seq_len,pre_len,training_epoch)
+path = os.path.join(out,path1)
+#if not os.path.exists(path):
 #    os.makedirs(path)
-
+    
 ###### evaluation ######
-def evaluation(a, b):
-    rmse = math.sqrt(mean_squared_error(a, b))
+def evaluation(a,b):
+    rmse = math.sqrt(mean_squared_error(a,b))
     mae = mean_absolute_error(a, b)
-    F_norm = la.norm(a - b, 'fro') / la.norm(a, 'fro')
-    r2 = 1 - ((a - b) ** 2).sum() / ((a - a.mean()) ** 2).sum()
-    var = 1 - (np.var(a - b)) / np.var(a)
-    return rmse, mae, 1 - F_norm, r2, var
-
-
-x_axe, batch_loss, batch_rmse, batch_pred = [], [], [], []
-test_loss, test_rmse, test_mae, test_acc, test_r2, test_var, test_pred = [], [], [], [], [], [], []
+    F_norm = la.norm(a-b,'fro')/la.norm(a,'fro')
+    r2 = 1-((a-b)**2).sum()/((a-a.mean())**2).sum()
+    var = 1-(np.var(a-b))/np.var(a)
+    return rmse, mae, 1-F_norm, r2, var
+ 
+   
+x_axe,batch_loss,batch_rmse,batch_pred = [], [], [], []
+test_loss,test_rmse,test_mae,test_acc,test_r2,test_var,test_pred = [],[],[],[],[],[],[]
 max_value = 1.0
 
 epoch = 0
 
-# for m in range(totalbatch):
+#for m in range(totalbatch):
 #   mini_batch = trainX[m * batch_size : (m+1) * batch_size]
 #   mini_label = trainY[m * batch_size : (m+1) * batch_size]
 #   loss1, rmse1, train_output = sess.run([loss, error, y_pred],
@@ -151,31 +147,31 @@ epoch = 0
 #   batch_loss.append(loss1)
 #   batch_rmse.append(rmse1 * max_value)
 
-# train_label = np.reshape(trainY, [-1,num_nodes])
-# train_output = sess.run(y_pred, feed_dict={inputs:trainX})
-# train_output = np.maximum(train_output, 0)
-# errors = train_label - train_output
-# errors_output = pd.DataFrame(errors)
-# errors_output.to_csv('./errors.csv', index=False, header=False)
+#train_label = np.reshape(trainY, [-1,num_nodes])
+#train_output = sess.run(y_pred, feed_dict={inputs:trainX})
+#train_output = np.maximum(train_output, 0)
+#errors = train_label - train_output
+#errors_output = pd.DataFrame(errors)
+#errors_output.to_csv('./errors.csv', index=False, header=False)
 
 # testX = trainX
 # testY = trainY
 
 loss2, rmse2, test_output = sess.run([loss, error, y_pred],
-                                     feed_dict={inputs: testX, labels: testY})
-# test_output = np.maximum(test_output, 0)
-test_label = np.reshape(testY, [-1, num_nodes])
+                                         feed_dict = {inputs:testX, labels:testY})
+#test_output = np.maximum(test_output, 0)
+test_label = np.reshape(testY,[-1,num_nodes])
 test_label = scaler.inverse_transform(test_label)
-# test_label /= 1000
+#test_label /= 1000
 
-# feedforward = load_model('./feed_forward.h5')
-# errors = feedforward.predict(testX)
-# errors = np.reshape(errors, [-1, num_nodes])
-# test_output = test_output + errors
+#feedforward = load_model('./feed_forward.h5')
+#errors = feedforward.predict(testX)
+#errors = np.reshape(errors, [-1, num_nodes])
+#test_output = test_output + errors
 
 test_output = scaler.inverse_transform(test_output)
 test_output = np.maximum(test_output, 0)
-# test_output /= 1000
+#test_output /= 1000
 rmse, mae, acc, r2_score, var_score = evaluation(test_label, test_output)
 test_label1 = test_label * max_value
 test_output1 = test_output * max_value
@@ -187,19 +183,51 @@ test_r2.append(r2_score)
 test_var.append(var_score)
 test_pred.append(test_output1)
 
+saved_test_output = test_output1
+saved_test_label = test_label1
 
-# test_output = pd.DataFrame(test_output)
-# test_output.to_csv('../ones_output.csv', index=False, header=False)
+#test_output = pd.DataFrame(test_output)
+#test_output.to_csv('../ones_output.csv', index=False, header=False)
 
 
-# print('Iter:{}'.format(0),
+#print('Iter:{}'.format(0),
 #     'rmse:{:.4}'.format(rmse),
 #     'mae:{:.4}'.format(mae),
 #     'acc:{:.4}'.format(acc),
 #     'r2:{:.4}'.format(r2_score),
 #     'var:{:.4}'.format(var_score))
 
-def test():
+def test_preprocess(new_data):
+    new_df = pd.read_csv(new_data)
+    row = new_df.shape[0]
+    if row < seq_len + pre_len:
+        return None, None
+    temp = np.mat(new_df)
+    print(temp.shape)
+    new_testX, new_testY = [], []
+    for i in range(row - seq_len - pre_len + 1):
+        b = temp[i: i + seq_len + pre_len].tolist()
+        new_testX.append(b[0 : seq_len])
+        new_testY.append(b[seq_len : seq_len + pre_len])
+    new_testX = np.array(new_testX)
+    new_testY = np.array(new_testY)
+    loss2, rmse2, new_test_output = sess.run([loss, error, y_pred],
+                                         feed_dict={inputs: new_testX, labels: new_testY})
+    new_test_label = np.reshape(new_testY, [-1, num_nodes])
+    new_test_label = scaler.inverse_transform(new_test_label)
+    new_test_output = scaler.inverse_transform(new_test_output)
+    new_test_output = np.maximum(new_test_output, 0)
+    return new_test_label, new_test_output
+
+
+def test(new_data):
+    if new_data is not None:
+        test_label1, test_output1 = test_preprocess(new_data)
+        if test_label1 is None:
+            return None, None, None, None, None
+    else:
+        test_label1 = saved_test_label
+        test_output1 = saved_test_output
     test_label = []
     test_output = []
     for i in range(0, test_output1.shape[0], pre_len):
@@ -209,11 +237,11 @@ def test():
     test_output = np.array(test_output).T
     rmse, mae, acc, r2_score, var_score = evaluation(test_label, test_output)
     print('TS:{}'.format(1),
-          'rmse:{:.4}'.format(rmse),
-          'mae:{:.4}'.format(mae),
-          'acc:{:.4}'.format(acc),
-          'r2:{:.4}'.format(r2_score),
-          'var:{:.4}'.format(var_score))
+        'rmse:{:.4}'.format(rmse),
+        'mae:{:.4}'.format(mae),
+        'acc:{:.4}'.format(acc),
+        'r2:{:.4}'.format(r2_score),
+        'var:{:.4}'.format(var_score))
 
     # test_label = []
     # test_output = []
@@ -267,3 +295,23 @@ def test():
     # plt.tight_layout()
 
     return fig, test_label[2], test_output[2], test_label[32], test_output[32]
+
+
+def performance_test():
+    time_list = []
+    x_list = []
+    for length in range(500, testX.shape[0], 500):
+        new_testX = testX[:length]
+        new_testY = testY[:length]
+        start_time = time.time()
+        loss2, rmse2, new_test_output = sess.run([loss, error, y_pred],
+                                                 feed_dict={inputs: new_testX, labels: new_testY})
+        end_time = time.time()
+        time_list.append(end_time - start_time)
+        x_list.append(length)
+    fig = plt.figure(figsize=(20, 10))
+    plt.plot(x_list, time_list, linestyle='-', color='r')
+    plt.xlabel('Test Set Capacity', fontsize=20, fontweight='bold')
+    plt.ylabel('Running Time (s)', fontsize=20, fontweight='bold')
+    plt.tight_layout()
+    return fig
